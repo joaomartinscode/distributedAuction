@@ -1,4 +1,3 @@
-﻿using Server;
 using System.Net;
 using System.Net.Sockets;
 using Utils;
@@ -18,8 +17,6 @@ namespace distributedAuction.Server
         {
             int nBidders = 0;
 
-            int portNumber = InputValidation.ValidateIntBetween("Enter the port number on which the server will listen [1024, 65535]: ", 1024, 65535);
-
             Console.WriteLine("Insert the name of the article: ");
             string articleName = Console.ReadLine()!;
 
@@ -28,6 +25,8 @@ namespace distributedAuction.Server
             int maxAuctionDuration = InputValidation.ValidateIntGT0("Insert the max duration of the auction: ");
 
             AuctionState auction = new AuctionState(articleName, basePrice, maxAuctionDuration);
+
+            int portNumber = InputValidation.ValidateIntBetween("Enter the port number on which the server will listen [1024, 65535]: ", 1024, 65535);
 
             TcpListener serverSocket = new TcpListener(IPAddress.Any, portNumber);
             List<Thread> threads = new List<Thread>();
@@ -53,6 +52,7 @@ namespace distributedAuction.Server
 
                         Thread thread = new Thread(serverThread.Run);
                         thread.Name = "ServerThread-" + nBidders;
+                        thread.IsBackground = true;
 
                         threads.Add(thread);
                         thread.Start();
@@ -61,7 +61,17 @@ namespace distributedAuction.Server
                     {
                         Console.WriteLine("\nServer: Time to accept new bidders has ended.");
 
-                        int validatedPlayers = auction.ActiveParticipants.Count;
+                        int validatedPlayers;
+                        mutex.WaitOne();
+                        try
+                        {
+                            validatedPlayers = auction.ActiveParticipants.Count;
+                        }
+                        finally
+                        {
+                            mutex.ReleaseMutex();
+                        }
+
                         if (validatedPlayers > 0)
                         {
                             Console.WriteLine($"Server: Releasing {validatedPlayers} validated participant(s) into the auction.");
@@ -69,7 +79,8 @@ namespace distributedAuction.Server
                         }
                         else
                         {
-                            Console.WriteLine("Server: No participants validated in time.");
+                            Console.WriteLine("Server: No participants validated in time. Auction cancelled.");
+                            return;
                         }
                         break;
                     }
@@ -78,18 +89,10 @@ namespace distributedAuction.Server
                 auction.isStarted = true;
                 Console.WriteLine($"Server: THE AUCTION FOR '{auction.ItemName}' HAS STARTED!");
 
-                DateTime startGame = DateTime.Now;
-                foreach(Thread t in threads)
-                {
-                    TimeSpan remaining = TimeSpan.FromSeconds(auction.MaxDuration) - (DateTime.Now - startGame);
-                    if (remaining.TotalMilliseconds > 0)
-                    {
-                        t.Join(remaining);
-                    }
-                }
+                Thread.Sleep(auction.MaxDuration * 1000);
 
                 auction.isEnded = true;
-                Console.WriteLine("Server: AUCTION TIME HAS ENDED!");
+                Console.WriteLine("\nServer: AUCTION TIME HAS ENDED!");
                 if (string.IsNullOrEmpty(auction.HighestBidder))
                 {
                     Console.WriteLine("Result: The item was not sold.");
@@ -97,6 +100,12 @@ namespace distributedAuction.Server
                 else
                 {
                     Console.WriteLine($"Result: The winner is '{auction.HighestBidder}' with a final bid of {auction.HighestBid} euros.");
+                }
+
+                Console.WriteLine("Server: Waiting for client threads to finish...");
+                foreach (Thread t in threads)
+                {
+                    t.Join(TimeSpan.FromSeconds(2));
                 }
 
                 Console.WriteLine("Server: All client threads closed.");

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net.Sockets;
 using Utils;
@@ -44,23 +44,33 @@ namespace distributedAuction.Client
                     }
                 }
 
-                string waitingMsg = inReader.ReadLine()!;
+                string? waitingMsg = inReader.ReadLine();
                 if (waitingMsg == "WAITING")
                 {
                     Console.WriteLine("Waiting for the auction to start. Please hold...");
                 }
+                else
+                {
+                    Console.WriteLine("Failed to enter auction (connection closed or timed out).");
+                    return;
+                }
 
-                string startMsg = inReader.ReadLine()!;
+                string? startMsg = inReader.ReadLine();
                 if (startMsg == "START")
                 {
                     string itemName = inReader.ReadLine()!;
                     string basePrice = inReader.ReadLine()!;
                     string duration = inReader.ReadLine()!;
                     
-                    Console.WriteLine(" THE AUCTION HAS STARTED!");
+                    Console.WriteLine("\nTHE AUCTION HAS STARTED!");
                     Console.WriteLine($" Item: {itemName}");
                     Console.WriteLine($" Base Price: {basePrice} euros");
                     Console.WriteLine($" Duration: {duration} seconds");
+                }
+                else
+                {
+                    Console.WriteLine("Auction did not start.");
+                    return;
                 }
 
                 while (true)
@@ -131,7 +141,7 @@ namespace distributedAuction.Client
                             {
                                 Console.WriteLine($"Winner: {leader} with a bid of {currentBid} euros");
                             }
-                            break;
+                            return;
                     }
                 }
             }

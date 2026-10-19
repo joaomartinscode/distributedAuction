@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Server
+namespace distributedAuction.Server
 {
-    public class AuctionState
+    internal class AuctionState
     {
         public string ItemName { get; set; }
         public double BasePrice { get; set; }
@@ -13,8 +13,8 @@ namespace Server
         public double HighestBid { get; set; }
         public string HighestBidder { get; set; }
 
-        public bool isStarted { get; set; }
-        public bool isEnded { get; set; }
+        public volatile bool isStarted;
+        public volatile bool isEnded;
 
         public List<string> ActiveParticipants { get; }
 

@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
+using System.Globalization;
 
-namespace Server
+namespace distributedAuction.Server
 {
-    public class ServerThread
+    internal class ServerThread
     {
         private readonly TcpClient clientSocket;
         private readonly SemaphoreSlim semaphore;
@@ -80,10 +80,22 @@ namespace Server
                 {
                     if (auction.isEnded)
                     {
-                        string winner = string.IsNullOrEmpty(auction.HighestBidder) ? "NONE" : auction.HighestBidder;
+                        string winner;
+                        double finalBid;
+                        mutex.WaitOne();
+                        try
+                        {
+                            winner = string.IsNullOrEmpty(auction.HighestBidder) ? "NONE" : auction.HighestBidder;
+                            finalBid = auction.HighestBid;
+                        }
+                        finally
+                        {
+                            mutex.ReleaseMutex();
+                        }
+
                         outWriter.WriteLine("END");
                         outWriter.WriteLine(winner);
-                        outWriter.WriteLine(auction.HighestBid);
+                        outWriter.WriteLine(finalBid);
                         Console.WriteLine($"{Thread.CurrentThread.Name}: Sent auction results to '{clientName}'.");
                         break;
                     }
@@ -93,8 +105,8 @@ namespace Server
                     switch (command)
                     {
                         case "BID":
-                            string bidText = inReader.ReadLine()!;
-                            if (double.TryParse(bidText, out double bidValue))
+                            string? bidText = inReader.ReadLine();
+                            if (bidText != null && double.TryParse(bidText, out double bidValue))
                             {
                                 mutex.WaitOne();
                                 try
@@ -111,15 +123,28 @@ namespace Server
                                         outWriter.WriteLine("ACCEPTED");
                                         outWriter.WriteLine(auction.HighestBid);
 
-                                        Console.WriteLine($"{Thread.CurrentThread.Name}: '{clientName} placed a bid of {bidValue}");
+                                        Console.WriteLine($"{Thread.CurrentThread.Name}: '{clientName}' placed a bid of {bidValue}");
                                     }
                                     else
                                     {
                                         outWriter.WriteLine("REJECTED");
                                         outWriter.WriteLine(auction.HighestBid);
 
-                                        Console.WriteLine($"{Thread.CurrentThread.Name}: Invalid value for the bid. Current highest: {auction.HighestBid}");
+                                        Console.WriteLine($"{Thread.CurrentThread.Name}: Invalid value for the bid from '{clientName}'. Current highest: {auction.HighestBid}");
                                     }
+                                }
+                                finally
+                                {
+                                    mutex.ReleaseMutex();
+                                }
+                            }
+                            else
+                            {
+                                mutex.WaitOne();
+                                try
+                                {
+                                    outWriter.WriteLine("REJECTED");
+                                    outWriter.WriteLine(auction.HighestBid);
                                 }
                                 finally
                                 {
