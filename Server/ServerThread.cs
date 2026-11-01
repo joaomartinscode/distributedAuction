@@ -175,11 +175,6 @@ namespace distributedAuction.Server
                             outWriter.WriteLine("DISCONNECTED");
                             Console.WriteLine($"{Thread.CurrentThread.Name}: Participant '{clientName}' chose to leave the auction early.");
                             return;
-
-                        default:
-                            outWriter.WriteLine("INVALID");
-                            Console.WriteLine($"{Thread.CurrentThread.Name}: '{clientName}' sent an invalid command: {command}");
-                            break;
                     }
                 }
             }

@@ -17,8 +17,15 @@ namespace distributedAuction.Server
         {
             int nBidders = 0;
 
-            Console.WriteLine("Insert the name of the article: ");
+            Console.Write("Insert the name of the article: ");
             string articleName = Console.ReadLine()!;
+
+            while (string.IsNullOrWhiteSpace(articleName))
+            {
+                Console.WriteLine("Article name cannot be empty. Please enter a valid name.");
+                Console.Write("Insert the name of the article: ");
+                articleName = Console.ReadLine()!;
+            }
 
             double basePrice = InputValidation.ValidateDoubleGT0("Insert the base price of the auction: ");
 
@@ -105,14 +112,14 @@ namespace distributedAuction.Server
                 Console.WriteLine("Server: Waiting for client threads to finish...");
                 foreach (Thread t in threads)
                 {
-                    t.Join(TimeSpan.FromSeconds(2));
+                    t.Join();
                 }
 
                 Console.WriteLine("Server: All client threads closed.");
             }
             catch (SocketException)
             {
-                Console.Error.WriteLine($"Server: An I/O error occurred while trying to create the socket on port {portNumber}");
+                Console.Error.WriteLine($"Server: Socket error occurred while trying to create the socket on port {portNumber}");
                 Environment.Exit(1);
             }
             catch (IOException ex)

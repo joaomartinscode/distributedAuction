@@ -12,6 +12,13 @@ namespace distributedAuction.Client
             Console.Write("Enter the hostname of the server you want to connect to: ");
             string hostname = Console.ReadLine()!;
 
+            while (string.IsNullOrWhiteSpace(hostname))
+            {
+                Console.WriteLine("Hostname cannot be empty. Please enter a valid hostname.");
+                Console.Write("Enter the hostname of the server you want to connect to: ");
+                hostname = Console.ReadLine()!;
+            }
+
             int portNumber = InputValidation.ValidateIntBetween("Enter the port number on which the server is listening [1024, 65535]: ", 1024, 65535);
 
             try
@@ -29,6 +36,14 @@ namespace distributedAuction.Client
                 {
                     Console.Write("\nEnter your username: ");
                     string name = Console.ReadLine()!;
+
+                    while (string.IsNullOrWhiteSpace(name))
+                    {
+                        Console.WriteLine("Username cannot be empty. Please enter a valid name.");
+                        Console.Write("Enter your username: ");
+                        name = Console.ReadLine()!;
+                    }
+
                     outWriter.WriteLine(name);
 
                     string response = inReader.ReadLine()!;
@@ -75,21 +90,21 @@ namespace distributedAuction.Client
 
                 while (true)
                 {
-                    Console.WriteLine("\nOptions: 1-Bid | 2-Status | 3-Exit");
+                    Console.WriteLine("\nOptions: Bid | Status | Exit");
                     Console.Write("Choose an option: ");
-                    string option = Console.ReadLine()!;
+                    string option = Console.ReadLine()!.Trim().ToLower();
 
-                    if (option == "1")
+                    if (option == "bid")
                     {
                         double bid = InputValidation.ValidateDoubleGT0("Enter your bid amount: ");
                         outWriter.WriteLine("BID");
                         outWriter.WriteLine(bid);
                     }
-                    else if (option == "2")
+                    else if (option == "status")
                     {
                         outWriter.WriteLine("STATUS");
                     }
-                    else if (option == "3")
+                    else if (option == "exit")
                     {
                         outWriter.WriteLine("EXIT");
                     }
@@ -127,6 +142,8 @@ namespace distributedAuction.Client
                             break;
                         case "DISCONNECTED":
                             Console.WriteLine("You left the auction.");
+                            Console.WriteLine("\nPress any key to finish...");
+                            Console.ReadKey();
                             return;
                         case "END":
                             leader = inReader.ReadLine()!;
@@ -141,6 +158,8 @@ namespace distributedAuction.Client
                             {
                                 Console.WriteLine($"Winner: {leader} with a bid of {currentBid} euros");
                             }
+                            Console.WriteLine("\nPress any key to finish...");
+                            Console.ReadKey();
                             return;
                     }
                 }
